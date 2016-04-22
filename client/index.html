@@ -1,0 +1,94 @@
+<html ng-app="friends_app">
+
+<head>
+	<title>Full Mean Demo</title>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+
+	<script>
+
+		var friends_app = angular.module('friends_app', []);
+
+		friends_app.factory('FriendFactory', function($http) {
+			var factory = {};
+			var friends = [];
+
+		  	factory.index = function(callback) {
+		  		$http.get('/friends').success(function(output){
+		  			friends = output;
+		  			callback(friends);
+		  		})
+		  	}
+
+		  	factory.create = function(info) {
+		    	$http.post('/friends', info).success(function(output){
+		    		console.log('success!!')
+		    		friends.push(output);
+		    	})
+		  	}
+
+		  	factory.delete = function(friend) {
+		  		console.log(friend['_id'])
+		  		$http.delete('/friends/' + friend["_id"]).success(function(){
+		  			console.log('friend deleted from database')
+		  		});
+		  		friends.splice(friends.indexOf(friend), 1);
+		  	}
+
+		  	return factory;
+		});
+
+		friends_app.controller('FriendsController', function($scope, FriendFactory) {
+			FriendFactory.index(function(data) {
+				$scope.friends = data;
+			});
+			
+			$scope.addfriend = function(){
+				FriendFactory.create($scope.new_friend, function(){
+					$scope.friends = FriendFactory.index();
+					$scope.new_friend = {};
+				});
+			}
+
+			// $scope.deleteFriend = function(friend){
+			// 	FriendFactory.delete(friend, function(){
+			// 		$scope.friends = FriendFactory.index();
+			// 	})
+			// }
+
+			$scope.deleteFriend = function(friend){
+				FriendFactory.delete(friend);
+				console.log('test', FriendFactory.index());				
+				FriendFactory.index(function(data) {
+					$scope.friends = data;
+				});
+			}
+
+		})
+
+	</script>
+
+</head>
+
+<body ng-controller="FriendsController">
+
+	<h1>Friends</h1>
+
+	<input type="text" ng-model="filter_name" placeholder="filter">
+	{{filter_name}}
+
+	<ul>
+
+		<li ng-repeat="friend in friends | filter: filter_name">
+			{{friend.name}}, {{friend.age}}
+			<button ng-click="deleteFriend(friend)">Delete</button>
+		</li>
+	</ul>
+
+	<h1>Add a Friend!</h1>
+
+	<input type="text" ng-model="new_friend.name" placeholder="name">
+	<input type="text" ng-model="new_friend.age" placeholder="age">
+	<input type="submit" ng-click="addfriend()">
+
+</body>
+</html>
